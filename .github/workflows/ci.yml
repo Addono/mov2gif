@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint (shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint bin/mov2gif
+        run: shellcheck bin/mov2gif
+
+  test:
+    name: Tests (bats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg imagemagick python3 python3-numpy bats
+
+      - name: Run test suite
+        run: bats tests/
+
+  docker-build:
+    name: Docker build + smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t mov2gif:ci .
+
+      - name: Verify help flag
+        run: docker run --rm mov2gif:ci --help
+
+      - name: Smoke test conversion
+        run: |
+          # Generate a tiny synthetic terminal recording
+          ffmpeg -y -hide_banner -loglevel quiet \
+            -f lavfi \
+            -i "color=c=black:size=800x560:rate=5,
+                drawbox=x=60:y=40:w=680:h=480:color=#1e2023:t=fill,
+                drawbox=x=60:y=40:w=680:h=28:color=#2d3035:t=fill" \
+            -t 0.4 /tmp/test.mov
+
+          mkdir -p /tmp/out
+          docker run --rm \
+            -v /tmp:/work \
+            mov2gif:ci -q medium /work/test.mov
+
+          ls /tmp/gifs/test_medium.gif
+          echo "✓ Docker smoke test passed"
