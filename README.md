@@ -52,6 +52,17 @@ docker run --rm -v "$(pwd):/work" ghcr.io/addono/gifframe -q xhigh demo.mov
 
 Output GIFs are written to `./gifs/` on your host machine.
 
+> **💡 Pro tip:** Create a shell alias to skip typing the full Docker command every time:
+> ```bash
+> alias gifframe='docker run --rm -v "$(pwd):/work" ghcr.io/addono/gifframe'
+> ```
+> Then use it just like the CLI version:
+> ```bash
+> ❯ gifframe *.mov                      # Convert all .mov files
+> ❯ gifframe -q xhigh recording.mov    # High quality
+> ```
+> Add the alias to your shell config (`.zshrc`, `.bashrc`, etc.) to persist it across sessions.
+
 ### Option 2 — Run directly
 
 ```bash
